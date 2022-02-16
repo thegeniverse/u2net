@@ -4,7 +4,7 @@ import torch
 import torchvision
 from PIL import Image
 
-from u2net.models import U2NET
+from .models import U2NET
 
 
 def normalize_prediction(pred: torch.Tensor, ) -> torch.Tensor:
