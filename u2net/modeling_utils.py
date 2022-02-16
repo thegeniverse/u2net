@@ -4,23 +4,23 @@ import torch
 import torchvision
 from PIL import Image
 
-from model import U2NET
+from u2net.models import U2NET
 
 
-def normalize_prediction(d):
-    ma = torch.max(d)
-    mi = torch.min(d)
+def normalize_prediction(pred: torch.Tensor, ) -> torch.Tensor:
+    max_pred = torch.max(pred)
+    min_pred = torch.min(pred)
 
-    dn = (d - mi) / (ma - mi)
+    norm_pred = (pred - min_pred) / (max_pred - min_pred)
 
-    return dn
+    return norm_pred
 
 
 def get_img_mask(
     img: Image.Image,
     model_name: str = "u2net",
     device: str = "cuda:0",
-):
+) -> Image.Image:
     model_dir = os.path.join(
         os.getcwd(),
         'saved_models',
@@ -43,16 +43,24 @@ def get_img_mask(
 
     d1, d2, d3, d4, d5, d6, d7 = u2net(img_tensor, )
 
-    for idx, d in enumerate([d1, d2, d3, d4, d5, d6, d7]):
-        pred = d[:, 0, :, :]
-        pred = normalize_prediction(pred, )
+    # NOTE: useful code to visualize all masks
+    # for idx, d in enumerate([d1, d2, d3, d4, d5, d6, d7]):
+    #     pred = d[:, 0, :, :]
+    #     pred = normalize_prediction(pred, )
 
-        mask = torchvision.transforms.ToPILImage()(pred)
-        mask.save(f"{idx}.png")
+    #     mask = torchvision.transforms.ToPILImage()(pred)
+    #     mask.save(f"{idx}.png")
+
+    pred = d2[:, 0, :, :]
+    pred = normalize_prediction(pred, )
+
+    mask = torchvision.transforms.ToPILImage()(pred)
 
     return mask
 
 
 if __name__ == "__main__":
-    img = Image.open("fungi.jpg").convert("RGB", )
+    # img = Image.open("fungi.jpg").convert("RGB", )
+    img = Image.open("ape.png").convert("RGB", )
+    img = img.resize((128, 128))
     mask = get_img_mask(img=img, )
