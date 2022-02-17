@@ -1,10 +1,26 @@
 import os
+import requests
 
 import torch
 import torchvision
 from PIL import Image
 
-from .models import U2NET
+from u2net.models import U2NET
+
+
+def download_model(model_path: str, ):
+    url = "https://drive.google.com/uc?id=1ao1ovG1Qtx4b7EoskHXmi2E9rp5CHLcZ&export=download&confirm=t"
+
+    session = requests.session()
+    response = session.get(
+        url,
+        allow_redirects=True,
+    )
+
+    assert response.ok, "Error downloading pre-trained weights!"
+
+    with open(model_path, "wb") as ckpt_file:
+        ckpt_file.write(response.content)
 
 
 def normalize_prediction(pred: torch.Tensor, ) -> torch.Tensor:
@@ -21,12 +37,15 @@ def get_img_mask(
     model_name: str = "u2net",
     device: str = "cuda:0",
 ) -> Image.Image:
-    model_dir = os.path.join(
+    model_path = os.path.join(
         os.getcwd(),
         'saved_models',
         model_name,
         model_name + '.pth',
     )
+
+    if not os.path.exists(model_path):
+        download_model(model_path)
 
     img_tensor = torchvision.transforms.PILToTensor()(img)
     img_tensor = (img_tensor / 255.) * 2 - 1
@@ -34,10 +53,10 @@ def get_img_mask(
 
     u2net = U2NET(3, 1)
     if torch.cuda.is_available():
-        u2net.load_state_dict(torch.load(model_dir))
+        u2net.load_state_dict(torch.load(model_path))
         u2net.to(device, )
     else:
-        u2net.load_state_dict(torch.load(model_dir, map_location='cpu'))
+        u2net.load_state_dict(torch.load(model_path, map_location='cpu'))
 
     u2net.eval()
 
@@ -64,3 +83,4 @@ if __name__ == "__main__":
     img = Image.open("ape.png").convert("RGB", )
     img = img.resize((128, 128))
     mask = get_img_mask(img=img, )
+    mask.save("mask.png")
