@@ -1,5 +1,6 @@
 import os
 import requests
+from typing import *
 
 import torch
 import torchvision
@@ -36,7 +37,7 @@ def get_img_mask(
     img: Image.Image,
     model_name: str = "u2net",
     device: str = "cuda:0",
-) -> Image.Image:
+) -> Union[torch.Tensor, Image.Image]:
     model_path = os.path.join(
         os.getcwd(),
         'saved_models',
@@ -47,9 +48,13 @@ def get_img_mask(
     if not os.path.exists(model_path):
         download_model(model_path)
 
-    img_tensor = torchvision.transforms.PILToTensor()(img)
-    img_tensor = (img_tensor / 255.) * 2 - 1
-    img_tensor = img_tensor.to(device, torch.float32)[None, :]
+    if torch.is_tensor(img):
+        img_tensor = img
+
+    else:
+        img_tensor = torchvision.transforms.PILToTensor()(img)
+        img_tensor = (img_tensor / 255.) * 2 - 1
+        img_tensor = img_tensor.to(device, torch.float32)[None, :]
 
     u2net = U2NET(3, 1)
     if torch.cuda.is_available():
@@ -73,7 +78,11 @@ def get_img_mask(
     pred = d2[:, 0, :, :]
     pred = normalize_prediction(pred, )
 
-    mask = torchvision.transforms.ToPILImage()(pred)
+    if torch.is_tensor(img):
+        mask = pred[None, :]
+
+    else:
+        mask = torchvision.transforms.ToPILImage()(pred)
 
     return mask
 
