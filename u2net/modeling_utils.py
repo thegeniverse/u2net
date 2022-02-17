@@ -38,10 +38,17 @@ def get_img_mask(
     model_name: str = "u2net",
     device: str = "cuda:0",
 ) -> Union[torch.Tensor, Image.Image]:
+    modeling_dir = os.path.join(
+        os.path.dirname(os.path.abspath(__file__)),
+        "saved_models",
+    )
+    os.makedirs(
+        modeling_dir,
+        exist_ok=True,
+    )
+
     model_path = os.path.join(
-        os.getcwd(),
-        'saved_models',
-        model_name,
+        modeling_dir,
         model_name + '.pth',
     )
 
@@ -54,7 +61,9 @@ def get_img_mask(
     else:
         img_tensor = torchvision.transforms.PILToTensor()(img)
         img_tensor = (img_tensor / 255.) * 2 - 1
-        img_tensor = img_tensor.to(device, torch.float32)[None, :]
+        img_tensor = img_tensor.to(torch.float32)[None, :]
+
+    img_tensor = img_tensor.to(device, )
 
     u2net = U2NET(3, 1)
     if torch.cuda.is_available():
